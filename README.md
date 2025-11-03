@@ -48,3 +48,9 @@ A complexidade de espaço refere-se à quantidade total de memória necessária 
 ## 4. Exemplo de Uso
 
 [colocar aqui um trecho da main.c que vai ser usada para exemplificar o uso do TAD]
+
+## 5. Referências
+
+  * https://pt.wikipedia.org/wiki/%C3%81rvore_rubro-negra
+  * https://www.ime.usp.br/~song/mac5710/slides/08rb.pdf
+  * https://www.ic.unicamp.br/~zanoni/teaching/mo637/2007-2s/aulas/arvoresRubroNegras.pdf
