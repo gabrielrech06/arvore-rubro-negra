@@ -47,7 +47,67 @@ A complexidade de espaço refere-se à quantidade total de memória necessária 
 
 ## 4. Exemplo de Uso
 
-[colocar aqui um trecho da main.c que vai ser usada para exemplificar o uso do TAD]
+O exemplo abaixo demonstra o ciclo de vida básico e as principais operações do TAD da Árvore Rubro-Negra. Para mais detalhes e exemplos, consultar o arquivo `main.c`.
+
+```
+#include <stdio.h>
+#include <stdlib.h>
+#include "arvore-rn.h"
+
+int main() {
+    // 1. criação
+    Arvore *arv = arv_cria();
+    printf("árvore criada. nós: %d.\n", arv_nnos(arv));
+    printf("----------------------------------\n");
+    
+    // 2. inserção
+    printf("inserindo os nós 10, 20, 5 e 30.\n");
+    arv_insere_no(arv, 10);
+    arv_insere_no(arv, 20);
+    arv_insere_no(arv, 5);
+    arv_insere_no(arv, 30);
+
+    // 3. consultas sobre a árvore
+    printf("número de nós: %d.\n", arv_nnos(arv));
+    printf("altura da árvore: %d.\n", arv_altura(arv));
+
+    if(arv_contem(arv, 20)) {
+        printf("o nó 20 está contido na árvore.\n");
+    }
+
+    if(!arv_contem(arv, 99)) {
+        printf("o nó 99 não está contido na árvore.\n");
+    }
+    printf("----------------------------------\n");
+
+    // 4. remoção
+    printf("removendo o nó 10.\n");
+    arv_remove_no(arv, 10);
+        
+    if(!arv_contem(arv, 10)) {
+        printf("o nó 10 não está mais contido.\n");
+    }
+
+    // 5. consulta de min/max e pai
+    No *raiz = arv_busca_raiz(arv);
+    No *no_min = arv_busca_minimo(raiz);
+    No *no_30 = arv_busca_no(raiz, 30);
+    No *pai_do_30 = arv_busca_pai(no_30);
+
+    int valor_min, valor_pai;
+    arv_busca_valor(no_min, &valor_min);
+    arv_busca_valor(pai_do_30, &valor_pai);
+    
+    printf("valor mínimo da árvore: %d.\n", valor_min);
+    printf("o pai do nó 30 é: %d.\n", valor_pai);
+    printf("----------------------------------\n");
+
+    // 6. liberação da árvore
+    arv_libera_arvore(arv);
+
+    return 0;
+}
+```
 
 ## 5. Referências
 
