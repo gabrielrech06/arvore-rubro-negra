@@ -311,6 +311,19 @@ static void arv_insere_fixup(Arvore *arv, No* no) {
     arv->raiz->cor = PRETO;
 }
 
+// função auxiliar para alocar o novo nó
+static No* arv_cria_no(int valor, Cor cor) {
+    No* novo_no = (No*)malloc(sizeof(No));
+    if(novo_no == NULL) return NULL;
+
+    novo_no->dado = valor;
+    novo_no->cor = cor;
+    novo_no->pai = NIL;
+    novo_no->dir = NIL;
+    novo_no->esq = NIL;
+
+    return novo_no;
+}   
 
 bool arv_insere_no(Arvore *arv, int v) {
     if(arv == NULL) return false;
