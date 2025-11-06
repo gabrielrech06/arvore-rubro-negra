@@ -42,13 +42,16 @@ bool arv_remove_no(Arvore *arv, int v);
 //// --- consultas ---
 
 // retorna true se a árvore estiver vazia ou false senão estiver vazia.
-bool arv_vazia(Arvore *arvore);
+bool arv_vazia(Arvore *arv);
 
 // retorna true se o nó for vazio.
-// um nó vazio é aquele que aponta para NULL.
+// um nó vazio é um nó NIL.
 bool arv_no_vazio(No *no);
 
-// retorna um ponteiro para o nó raiz da árvore
+// retorna o número de nós da árvore.
+int arv_nnos(Arvore *arv);
+
+// retorna um ponteiro para o nó raiz da árvore.
 No* arv_busca_raiz(Arvore *arv);
 
 // retorna um ponteiro para o filho do nó.
@@ -63,7 +66,7 @@ Cor arv_busca_cor(No *no);
 No* arv_busca_pai(No *no);
 
 // retorna true e grava em `*retorno` o valor do nó.
-// retorna false se `no` == NULL ou `retorno` == NULL.
+// retorna false se `no` == NULL/NIL ou `retorno` == NULL.
 bool arv_busca_valor(No *no, int *retorno);
 
 // retorna um ponteiro para o nó com o valor buscado.
