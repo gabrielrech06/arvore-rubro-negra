@@ -337,6 +337,7 @@ static No* arv_cria_no(void *valor, Cor cor) {
 
 bool arv_insere_no(Arvore *arv, void *v) {
     if(arv == NULL) return false;
+    if(v == NULL) return false;
 
     // aloca o novo nó com o ponteiro para `v`
     // todo nó a ser inserido é pintado de vermelho
