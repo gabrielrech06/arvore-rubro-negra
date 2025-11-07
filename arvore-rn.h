@@ -3,7 +3,7 @@
 
 // Árvore Rubro-Negra
 //
-// TAD que implementa uma árvore rubro-negra (com dados do tipo int).
+// TAD que implementa uma árvore rubro-negra genérica.
 //
 
 #include <stdbool.h>
@@ -12,6 +12,12 @@
 typedef struct no No;
 typedef struct arvore Arvore;
 typedef enum { VERMELHO, PRETO } Cor;
+// a função recebe ponteiros para dois dados, e retorna um inteiro
+// com o resultado da comparação, que deve ser:
+//   - positivo se o primeiro item tem "valor" maior que o segundo,
+//   - negativo se o primeiro item tem "valor" menor que o segundo,
+//   - zero se os itens têm o mesmo "valor".
+typedef int Comparador(void *dado1, void *dado2);
 
 
 
@@ -20,7 +26,7 @@ typedef enum { VERMELHO, PRETO } Cor;
 // cria e retorna uma árvore rubro-negra vazia.
 // retorna um ponteiro para nova árvore ou NULL em caso de falha de alocação.
 // quem chamar deve liberar com arv_libera_arvore quando não for mais útil.
-Arvore* arv_cria();
+Arvore* arv_cria(int tam_bytes_dado, Comparador *comp);
 
 // libera toda a árvore rubro-negra.
 void arv_libera_arvore(Arvore *arv);
@@ -31,11 +37,11 @@ void arv_libera_arvore(Arvore *arv);
 
 // insere na árvore rubro-negra o nó com o valor passado como argumento.
 // retorna true se for bem sucedido ou false caso não.
-bool arv_insere_no(Arvore *arv, int v);
+bool arv_insere_no(Arvore *arv, void *v);
 
 // remove da árvore rubro-negra o nó com o valor passado como argumento.
 // retorna true se for bem sucedido ou false caso não.
-bool arv_remove_no(Arvore *arv, int v);
+bool arv_remove_no(Arvore *arv, void *v);
 
 
 
@@ -67,14 +73,14 @@ No* arv_busca_pai(No *no);
 
 // retorna true e grava em `*retorno` o valor do nó.
 // retorna false se `no` == NULL/NIL ou `retorno` == NULL.
-bool arv_busca_valor(No *no, int *retorno);
+bool arv_busca_valor(No *no, void *retorno, int tam_bytes_dado);
 
 // retorna um ponteiro para o nó com o valor buscado.
 // procura a partir de `raiz`.
-No* arv_busca_no(No *raiz, int v);
+No* arv_busca_no(No *raiz, void *v, Comparador *comp);
 
 // retorna true se a árvore conter o valor `v` ou false senão conter.
-bool arv_contem(Arvore *arv, int v);
+bool arv_contem(Arvore *arv, void *v);
 
 // retorna a altura da árvore.
 int arv_altura(Arvore *arv);
