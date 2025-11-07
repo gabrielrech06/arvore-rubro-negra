@@ -1,26 +1,29 @@
 #include "arvore-rn.h"
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 // estrutura de um nó da árvore rubro-negra
 struct no {
-    int dado;
+    void *dado;
     Cor cor;
-    No* dir;
-    No* esq;
-    No* pai;
+    No *dir;
+    No *esq;
+    No *pai;
 };
 
 // estrutura de uma árvore rubro-negra
 struct arvore {
-    No* raiz;
+    No *raiz;
     int num_nos;
+    int tam_dado;
+    Comparador *comp;
 };
 
 // nó sentinela para representar os nós NIL's da árvore
 // todo nó NIL é preto por propriedade da árvore
 static struct no NIL_SENTINELA;
-static No* NIL = &NIL_SENTINELA;
+static No *NIL = &NIL_SENTINELA;
 static bool nil_inicializado = false;
 
 
@@ -31,7 +34,7 @@ static bool nil_inicializado = false;
 static void arv_inicializa_nil() {
     if(!nil_inicializado) {
         NIL->cor = PRETO;
-        NIL->dado = -1;
+        NIL->dado = NULL;
         NIL->pai = NIL;
         NIL->esq = NIL;
         NIL->dir = NIL;
@@ -39,10 +42,10 @@ static void arv_inicializa_nil() {
     }
 }
 
-Arvore* arv_cria() {
+Arvore* arv_cria(int tam_dado, Comparador *comp) {
     arv_inicializa_nil();
 
-    Arvore* nova_arvore = (Arvore*)malloc(sizeof(Arvore));
+    Arvore *nova_arvore = (Arvore*)malloc(sizeof(Arvore));
     if(nova_arvore == NULL) {
         return NULL;
     }
@@ -50,18 +53,21 @@ Arvore* arv_cria() {
     // raiz de uma árvore recém criada aponta para NIL
     nova_arvore->raiz = NIL; 
     nova_arvore->num_nos = 0;
+    nova_arvore->tam_dado = tam_dado;
+    nova_arvore->comp = comp;
     
     return nova_arvore;
 }
 
 // função auxiliar para liberar os nós a partir de `no`
 // recursivamente
-static void arv_libera_no(No* no) {
+static void arv_libera_no(No *no) {
     if(arv_no_vazio(no)) return;
 
     arv_libera_no(no->esq);
     arv_libera_no(no->dir);
 
+    free(no->dado);
     free(no);
 }
 
@@ -80,7 +86,7 @@ void arv_libera_arvore(Arvore *arv) {
 
 // função auxiliar que busca o avô do nó `no`
 // e retorna o ponteiro para seu avô
-static No* arv_busca_avo(No* no) {
+static No* arv_busca_avo(No *no) {
     // se o `no` não for NIL e tiver um pai, retorna 
     // seu avô
     if(!arv_no_vazio(no) && !arv_no_vazio(no->pai)) {
@@ -94,7 +100,7 @@ static No* arv_busca_avo(No* no) {
 // função auxiliar que busca o tio do nó `no`
 // (tio == irmão de seu pai)
 // e retorna o ponteiro para seu tio
-static No* arv_busca_tio(No* no) {
+static No* arv_busca_tio(No *no) {
     No* avo = arv_busca_avo(no);
 
     // se não tem avô, é impossível ter tio
@@ -209,7 +215,7 @@ static void arv_rotacao_direita(Arvore *arv, No *no) {
 // subindo a partir do novo nó inserido,
 // rotacionando e repintando nós para não 
 // quebrar nenhuma propriedade
-static void arv_insere_fixup(Arvore *arv, No* no) {
+static void arv_insere_fixup(Arvore *arv, No *no) {
     // é necessário corrigir apenas se o pai do novo nó for vermelho.
     // se for preto (incluindo NIL), a árvore não quebra nenhuma propriedade.
     while(no->pai->cor == VERMELHO) {
@@ -312,35 +318,41 @@ static void arv_insere_fixup(Arvore *arv, No* no) {
 }
 
 // função auxiliar para alocar o novo nó
-static No* arv_cria_no(int valor, Cor cor) {
-    No* novo_no = (No*)malloc(sizeof(No));
+static No* arv_cria_no(void *valor, Cor cor, int tam_bytes_dado) {
+    No *novo_no = (No*)malloc(sizeof(No));
     if(novo_no == NULL) return NULL;
 
-    novo_no->dado = valor;
+    novo_no->dado = (void*)malloc(tam_bytes_dado);
+    if(novo_no->dado == NULL) {
+        free(novo_no);
+        return NULL;
+    }
+
+    memcpy(novo_no->dado, valor, tam_bytes_dado);
     novo_no->cor = cor;
     novo_no->pai = NIL;
     novo_no->dir = NIL;
     novo_no->esq = NIL;
 
     return novo_no;
-}   
+}
 
-bool arv_insere_no(Arvore *arv, int v) {
+bool arv_insere_no(Arvore *arv, void *v) {
     if(arv == NULL) return false;
 
     // aloca o novo nó com o dado `v`
     // todo nó a ser inserido é pintado de vermelho
     // inicialmente, com possibilidade de ser repintado
     // de preto para não quebrar nenhuma propriedade
-    No* novo_no = arv_cria_no(v, VERMELHO);
+    No *novo_no = arv_cria_no(v, VERMELHO, arv->tam_dado);
     if(novo_no == NULL) return false;
 
-    No* pai = NIL;
-    No* atual = arv->raiz;
+    No *pai = NIL;
+    No *atual = arv->raiz;
     // procura pela posição de inserção do novo nó
     while(!arv_no_vazio(atual)) {
         pai = atual;
-        if(novo_no->dado < atual->dado) {
+        if(arv->comp(novo_no->dado, atual->dado) < 0) {
             atual = atual->esq;
         } 
         else {
@@ -355,7 +367,7 @@ bool arv_insere_no(Arvore *arv, int v) {
     if(arv_no_vazio(pai)) {
         arv->raiz = novo_no;
     }
-    else if(novo_no->dado < pai->dado) {
+    else if(arv->comp(novo_no->dado, pai->dado) < 0) {
         pai->esq = novo_no;
     } 
     else {
@@ -547,26 +559,26 @@ static void arv_remove_fixup(Arvore *arv, No *no) {
     no->cor = PRETO;
 }
 
-bool arv_remove_no(Arvore *arv, int v) {
+bool arv_remove_no(Arvore *arv, void *v) {
     if(arv == NULL) return false;
 
     // busca o nó a remover
-    No* no_buscado = arv_busca_no(arv->raiz, v);
+    No *no_buscado = arv_busca_no(arv->raiz, v, arv->comp);
     // se não encontrou, retorna false
     if(arv_no_vazio(no_buscado)) return false;
 
     // `no_remover` é o  ponteiro para o nó que realmente será removido,
     // vamos copiar o conteudo do sucessor para cima, facilitando
     // a remoção (se tiver 2 filhos)
-    No* no_remover = no_buscado;
+    No *no_remover = no_buscado;
     
     // se `no_buscado` tiver 2 filhos, copiamos o conteúdo do sucessor para
     // `no_buscado` (que está acima) e removemos o sucessor dele
     if(!arv_no_vazio(no_buscado->esq) && !arv_no_vazio(no_buscado->dir)) {
         // pega o menor dos sucessores partindo do `no_buscado`
-        No* sucessor = arv_busca_minimo(no_buscado->dir);
+        No *sucessor = arv_busca_minimo(no_buscado->dir);
         // copia o dado para `no_buscado`
-        no_buscado->dado = sucessor->dado;
+        memcpy(no_buscado->dado, sucessor->dado, arv->tam_dado);
         // agora, o nó realmente a remover é esse sucessor que teve seu
         // dado copiado
         no_remover = sucessor;
@@ -578,7 +590,7 @@ bool arv_remove_no(Arvore *arv, int v) {
     // acha o nó para substituir esse que será realmente removido,
     // que sera seu filho não NIL ou NIL se o `no_remover`
     // for um nó sem filhos
-    No* no_substituto;
+    No *no_substituto;
     if(arv_no_vazio(no_remover->esq)) {
         no_substituto = no_remover->dir;
     }
@@ -600,6 +612,8 @@ bool arv_remove_no(Arvore *arv, int v) {
     }
 
     // libera o nó realmente removido
+    // mas primeiro libera o dado do nó
+    free(no_remover->dado);
     free(no_remover);
     arv->num_nos--;
     return true;
@@ -649,22 +663,25 @@ No* arv_busca_pai(No *no) {
     return no->pai;
 }
 
-bool arv_busca_valor(No *no, int *retorno) {
+bool arv_busca_valor(No *no, void *retorno, int tam_bytes_dado) {
     if(arv_no_vazio(no)) return false;
     if(retorno == NULL) return false;
 
-    *retorno = no->dado;
+    memcpy(retorno, no->dado, tam_bytes_dado);
     return true;
 }
 
-No* arv_busca_no(No *raiz, int v) {
+No* arv_busca_no(No *raiz, void *v, Comparador *comp) {
     if(arv_no_vazio(raiz)) return NIL;
 
-    No* atual = raiz;
+    No *atual = raiz;
     while(!arv_no_vazio(atual)) {
-        if(atual->dado == v) return atual;
+        int resultado_comp = comp(v, atual->dado);
 
-        if(atual->dado > v) {
+        if(resultado_comp == 0) {
+            return atual;
+        }
+        else if(resultado_comp < 0) {
             atual = atual->esq;
         }
         else {
@@ -676,15 +693,15 @@ No* arv_busca_no(No *raiz, int v) {
     return NIL;
 }
 
-bool arv_contem(Arvore *arv, int v) {
+bool arv_contem(Arvore *arv, void *v) {
     if(arv == NULL) return false;
 
-    return arv_busca_no(arv->raiz, v) != NIL;
+    return arv_busca_no(arv->raiz, v, arv->comp) != NIL;
 }
 
 // função auxiliar para calcular a altura da árvore
 // de forma recursiva
-static int arv_altura_rec(No* no) {
+static int arv_altura_rec(No *no) {
     if(arv_no_vazio(no)) return 0;
 
     int altura_esq = arv_altura_rec(no->esq);
