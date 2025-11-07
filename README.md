@@ -47,64 +47,77 @@ A complexidade de espaço refere-se à quantidade total de memória necessária 
 
 ## 4. Exemplo de Uso
 
-O exemplo abaixo demonstra o ciclo de vida básico e as principais operações do TAD da Árvore Rubro-Negra. Para mais detalhes e exemplos, consultar o arquivo `main.c`.
+O exemplo abaixo demonstra o ciclo de vida básico e as principais operações do TAD genérico. Note que o usuário é responsável por alocar a memória para os dados e por fornecer as funções de comparação e liberação. Para mais detalhes e exemplos, consultar o arquivo `main.c`.
 
 ```
 #include <stdio.h>
 #include <stdlib.h>
 #include "arvore-rn.h"
 
-int main() {
-    // 1. criação
-    Arvore *arv = arv_cria();
-    printf("árvore criada. nós: %d.\n", arv_nnos(arv));
-    printf("----------------------------------\n");
-    
-    // 2. inserção
-    printf("inserindo os nós 10, 20, 5 e 30.\n");
-    arv_insere_no(arv, 10);
-    arv_insere_no(arv, 20);
-    arv_insere_no(arv, 5);
-    arv_insere_no(arv, 30);
+// função de comparação que a árvore vai utilizar
+int comparador_int(void *p1, void *p2) {
+    // converte os ponteiros void* de volta para int*
+    int *i1 = (int*)p1;
+    int *i2 = (int*)p2;
 
-    // 3. consultas sobre a árvore
+    if(*i1 < *i2) return -1;
+    if(*i1 > *i2) return 1;
+    return 0;
+}
+
+// função auxiliar para alocar um inteiro na heap, apenas o usuário
+// vai utilizar, ela não é passada para a árvore
+int* aloca_int(int valor) {
+    int *dado = (int*)malloc(sizeof(int));
+    if(dado != NULL) {
+        *dado = valor;
+    }
+    return dado;
+}
+
+int main() {
+    // criação
+    // para liberar o inteiro a função free já basta.
+    Arvore *arv = arv_cria(comparador_int, free);
+    printf("árvore de inteiros criada. nós: %d.\n", arv_nnos(arv));
+    
+    // inserção
+    // o usuário deve fazer a alocação do valor a ser inserido.
+    printf("inserindo os nós 10, 20 e 5.\n");
+    arv_insere_no(arv, aloca_int(10));
+    arv_insere_no(arv, aloca_int(20));
+    arv_insere_no(arv, aloca_int(5));
+
+    // consulta de propriedades da árvore
     printf("número de nós: %d.\n", arv_nnos(arv));
     printf("altura da árvore: %d.\n", arv_altura(arv));
 
-    if(arv_contem(arv, 20)) {
-        printf("o nó 20 está contido na árvore.\n");
+    // para remover ou consultar um certo valor, basta passar o
+    // endereço de uma variável local com o valor desejado.
+    int val_busca = 20;
+    if(arv_contem(arv, &val_busca)) {
+        printf("a árvore contém o nó 20.\n");
     }
 
-    if(!arv_contem(arv, 99)) {
-        printf("o nó 99 não está contido na árvore.\n");
-    }
-    printf("----------------------------------\n");
-
-    // 4. remoção
+    // remoção
+    int val_remove = 10;
     printf("removendo o nó 10.\n");
-    arv_remove_no(arv, 10);
-        
-    if(!arv_contem(arv, 10)) {
-        printf("o nó 10 não está mais contido.\n");
+    arv_remove_no(arv, &val_remove);
+
+    if(!arv_contem(arv, &val_remove)) {
+        printf("a árvore não contém mais o nó 10.\n");
     }
 
-    // 5. consulta de min/max e pai
+    // busca de valor
     No *raiz = arv_busca_raiz(arv);
     No *no_min = arv_busca_minimo(raiz);
-    No *no_30 = arv_busca_no(raiz, 30);
-    No *pai_do_30 = arv_busca_pai(no_30);
-
-    int valor_min, valor_pai;
-    arv_busca_valor(no_min, &valor_min);
-    arv_busca_valor(pai_do_30, &valor_pai);
+    // arv_busca_valor retorna o ponteiro void* original
+    int *ptr_min = (int*)arv_busca_valor(no_min);
     
-    printf("valor mínimo da árvore: %d.\n", valor_min);
-    printf("o pai do nó 30 é: %d.\n", valor_pai);
-    printf("----------------------------------\n");
+    printf("valor mínimo da árvore: %d\n", *ptr_min);
 
-    // 6. liberação da árvore
+    // liberação da árvore
     arv_libera_arvore(arv);
-
     return 0;
 }
 ```
@@ -112,5 +125,6 @@ int main() {
 ## 5. Referências
 
   * https://pt.wikipedia.org/wiki/%C3%81rvore_rubro-negra
+  * https://www.slideshare.net/slideshow/red-blacktrees-final/61104781#7
   * https://www.ime.usp.br/~song/mac5710/slides/08rb.pdf
   * https://www.ic.unicamp.br/~zanoni/teaching/mo637/2007-2s/aulas/arvoresRubroNegras.pdf
