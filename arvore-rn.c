@@ -16,8 +16,8 @@ struct no {
 struct arvore {
     No *raiz;
     int num_nos;
-    int tam_dado;
     Comparador *comp;
+    Liberador *libera;
 };
 
 // nó sentinela para representar os nós NIL's da árvore
@@ -42,8 +42,11 @@ static void arv_inicializa_nil() {
     }
 }
 
-Arvore* arv_cria(int tam_dado, Comparador *comp) {
+Arvore* arv_cria(Comparador *comp, Liberador *libera) {
     arv_inicializa_nil();
+
+    // sem função de comparação não tem como a árvore se organizar
+    if(comp == NULL) return NULL;
 
     Arvore *nova_arvore = (Arvore*)malloc(sizeof(Arvore));
     if(nova_arvore == NULL) {
@@ -53,21 +56,22 @@ Arvore* arv_cria(int tam_dado, Comparador *comp) {
     // raiz de uma árvore recém criada aponta para NIL
     nova_arvore->raiz = NIL; 
     nova_arvore->num_nos = 0;
-    nova_arvore->tam_dado = tam_dado;
     nova_arvore->comp = comp;
+    nova_arvore->libera = libera;
     
     return nova_arvore;
 }
 
 // função auxiliar para liberar os nós a partir de `no`
 // recursivamente
-static void arv_libera_no(No *no) {
+static void arv_libera_no(No *no, Liberador *libera) {
     if(arv_no_vazio(no)) return;
 
-    arv_libera_no(no->esq);
-    arv_libera_no(no->dir);
+    arv_libera_no(no->esq, libera);
+    arv_libera_no(no->dir, libera);
 
-    free(no->dado);
+    // se tiver função de liberação, libera o dado
+    if(libera != NULL) libera(no->dado);
     free(no);
 }
 
@@ -75,7 +79,7 @@ void arv_libera_arvore(Arvore *arv) {
     if(arv == NULL) return;
 
     // libera todos os nós partindo da raiz da árvore
-    arv_libera_no(arv->raiz);
+    arv_libera_no(arv->raiz, arv->libera);
     // libera o descritor da árvore
     free(arv);
 }
@@ -318,17 +322,11 @@ static void arv_insere_fixup(Arvore *arv, No *no) {
 }
 
 // função auxiliar para alocar o novo nó
-static No* arv_cria_no(void *valor, Cor cor, int tam_bytes_dado) {
+static No* arv_cria_no(void *valor, Cor cor) {
     No *novo_no = (No*)malloc(sizeof(No));
     if(novo_no == NULL) return NULL;
 
-    novo_no->dado = (void*)malloc(tam_bytes_dado);
-    if(novo_no->dado == NULL) {
-        free(novo_no);
-        return NULL;
-    }
-
-    memcpy(novo_no->dado, valor, tam_bytes_dado);
+    novo_no->dado = valor;
     novo_no->cor = cor;
     novo_no->pai = NIL;
     novo_no->dir = NIL;
@@ -340,11 +338,11 @@ static No* arv_cria_no(void *valor, Cor cor, int tam_bytes_dado) {
 bool arv_insere_no(Arvore *arv, void *v) {
     if(arv == NULL) return false;
 
-    // aloca o novo nó com o dado `v`
+    // aloca o novo nó com o ponteiro para `v`
     // todo nó a ser inserido é pintado de vermelho
     // inicialmente, com possibilidade de ser repintado
     // de preto para não quebrar nenhuma propriedade
-    No *novo_no = arv_cria_no(v, VERMELHO, arv->tam_dado);
+    No *novo_no = arv_cria_no(v, VERMELHO);
     if(novo_no == NULL) return false;
 
     No *pai = NIL;
@@ -577,8 +575,10 @@ bool arv_remove_no(Arvore *arv, void *v) {
     if(!arv_no_vazio(no_buscado->esq) && !arv_no_vazio(no_buscado->dir)) {
         // pega o menor dos sucessores partindo do `no_buscado`
         No *sucessor = arv_busca_minimo(no_buscado->dir);
-        // copia o dado para `no_buscado`
-        memcpy(no_buscado->dado, sucessor->dado, arv->tam_dado);
+        // copia o ponteiro para o dado para `no_buscado`
+        No* temp = no_buscado->dado;
+        no_buscado->dado = sucessor->dado;
+        sucessor->dado = temp;
         // agora, o nó realmente a remover é esse sucessor que teve seu
         // dado copiado
         no_remover = sucessor;
@@ -612,8 +612,8 @@ bool arv_remove_no(Arvore *arv, void *v) {
     }
 
     // libera o nó realmente removido
-    // mas primeiro libera o dado do nó
-    free(no_remover->dado);
+    // mas primeiro libera o dado do nó se tiver o liberador
+    if(arv->libera != NULL) arv->libera(no_remover->dado);
     free(no_remover);
     arv->num_nos--;
     return true;
@@ -663,12 +663,10 @@ No* arv_busca_pai(No *no) {
     return no->pai;
 }
 
-bool arv_busca_valor(No *no, void *retorno, int tam_bytes_dado) {
-    if(arv_no_vazio(no)) return false;
-    if(retorno == NULL) return false;
+void* arv_busca_valor(No *no) {
+    if(arv_no_vazio(no)) return NULL;
 
-    memcpy(retorno, no->dado, tam_bytes_dado);
-    return true;
+    return no->dado;
 }
 
 No* arv_busca_no(No *raiz, void *v, Comparador *comp) {
