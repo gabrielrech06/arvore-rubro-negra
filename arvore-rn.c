@@ -577,7 +577,7 @@ bool arv_remove_no(Arvore *arv, void *v) {
         // pega o menor dos sucessores partindo do `no_buscado`
         No *sucessor = arv_busca_minimo(no_buscado->dir);
         // copia o ponteiro para o dado para `no_buscado`
-        No* temp = no_buscado->dado;
+        void *temp = no_buscado->dado;
         no_buscado->dado = sucessor->dado;
         sucessor->dado = temp;
         // agora, o nó realmente a remover é esse sucessor que teve seu
